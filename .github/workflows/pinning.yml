@@ -1,24 +1,39 @@
-name: Action Pinning
+name: Composed Actions
 
 on:
   push:
     branches: [ master ]
 
 jobs:
-  pin-by-tag:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout pinned by floating major tag (@v4)
+      - name: Checkout (provides the source files)
         uses: actions/checkout@v4
 
-  pin-by-branch:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout pinned by branch (@main) - DO NOT USE IN PRODUCTION
-        uses: actions/checkout@main
+      - name: Setup Node (consumes the source, exposes node + npm)
+        id: node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-  pin-by-sha:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout pinned by full SHA (immutable)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Show outputs from setup-node
+        run: |
+          echo "node-version: ${{ steps.node.outputs.node-version }}"
+          echo "Active node binary: $(which node)"
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build artifact
+        run: |
+          mkdir -p dist
+          cp test.js dist/
+          echo "Built at $(date -u)" > dist/build.txt
+
+      - name: Upload artifact (consumes dist/, produces a downloadable artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 1
