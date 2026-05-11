@@ -1,39 +1,50 @@
-name: Composed Actions
+name: Log Annotations
 
 on:
   push:
     branches: [ master ]
 
 jobs:
-  build:
+  annotate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (provides the source files)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node (consumes the source, exposes node + npm)
-        id: node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Show outputs from setup-node
+      - name: Notice and warning annotations
         run: |
-          echo "node-version: ${{ steps.node.outputs.node-version }}"
-          echo "Active node binary: $(which node)"
+          echo "::notice title=Build started::Run number ${{ github.run_number }}"
+          echo "::warning::This is a workflow-level warning"
 
-      - name: Run tests
-        run: npm test
-
-      - name: Build artifact
+      - name: Error annotation tied to a file and line
         run: |
-          mkdir -p dist
-          cp test.js dist/
-          echo "Built at $(date -u)" > dist/build.txt
+          echo "::error file=test.js,line=1,title=Lint issue::Demonstrating a file-targeted error"
 
-      - name: Upload artifact (consumes dist/, produces a downloadable artifact)
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: dist/
-          retention-days: 1
+      - name: Collapsible group of noisy output
+        run: |
+          echo "::group::Detailed configuration dump"
+          echo "Environment: production"
+          echo "Region: us-east-1"
+          echo "Replicas: 5"
+          echo "Tier: Premium"
+          echo "Monitor: enabled"
+          echo "::endgroup::"
+          echo "Summary: 5 replicas in us-east-1"
+
+      - name: Runtime secret masking
+        run: |
+          SECRET_VALUE="leaking-this-would-be-bad"
+          echo "::add-mask::$SECRET_VALUE"
+          echo "Now the value is masked: $SECRET_VALUE"
+          echo "It appears as *** in the run log."
+
+      - name: Surface key results in $GITHUB_STEP_SUMMARY
+        run: |
+          {
+            echo "## Run Summary"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Run | ${{ github.run_number }} |"
+            echo "| SHA | \`${{ github.sha }}\` |"
+            echo "| Actor | ${{ github.actor }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
