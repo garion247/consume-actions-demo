@@ -1,50 +1,21 @@
-name: Log Annotations
+name: Diagnostics
 
 on:
   push:
     branches: [ master ]
 
 jobs:
-  annotate:
+  good:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - run: echo "Healthy step"
 
-      - name: Notice and warning annotations
+  mixed:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "First step works"
+      - name: Failing step
         run: |
-          echo "::notice title=Build started::Run number ${{ github.run_number }}"
-          echo "::warning::This is a workflow-level warning"
-
-      - name: Error annotation tied to a file and line
-        run: |
-          echo "::error file=test.js,line=1,title=Lint issue::Demonstrating a file-targeted error"
-
-      - name: Collapsible group of noisy output
-        run: |
-          echo "::group::Detailed configuration dump"
-          echo "Environment: production"
-          echo "Region: us-east-1"
-          echo "Replicas: 5"
-          echo "Tier: Premium"
-          echo "Monitor: enabled"
-          echo "::endgroup::"
-          echo "Summary: 5 replicas in us-east-1"
-
-      - name: Runtime secret masking
-        run: |
-          SECRET_VALUE="leaking-this-would-be-bad"
-          echo "::add-mask::$SECRET_VALUE"
-          echo "Now the value is masked: $SECRET_VALUE"
-          echo "It appears as *** in the run log."
-
-      - name: Surface key results in $GITHUB_STEP_SUMMARY
-        run: |
-          {
-            echo "## Run Summary"
-            echo ""
-            echo "| Field | Value |"
-            echo "|-------|-------|"
-            echo "| Run | ${{ github.run_number }} |"
-            echo "| SHA | \`${{ github.sha }}\` |"
-            echo "| Actor | ${{ github.actor }} |"
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "About to fail..."
+          exit 1
+      - run: echo "This step is skipped because of the prior failure"
